@@ -1,81 +1,70 @@
-import {HttpStatusCode} from 'axios';
-import {Request, Response} from 'express';
-import {Action} from '../framework/type';
-import {createUser, deleteUserById, getUserById, getUsers, isUsernameAvailable} from '../service/users.service';
+import { HttpStatusCode } from 'axios';
+import { Request, Response } from 'express';
+import { Action } from '../framework/type';
+import { createUser, isUsernameAvailable } from '../service/users.service';
+import { listUsers } from "../service/users.service";
+import { deleteUser } from "../service/users.service";
+import { giveUserById } from "../service/users.service";
+import { z } from "zod";
 
-export const isValidUsername = (value: any) => {
-    return typeof value === 'string' && value.length >= 5 && value.length < 20;
-}
+const createUserSchema = z.object({
+  username: z.string().min(3).max(25),
+})
 
 const createUserAction: Action = {
-    method: 'post',
-    path: '/user',
-    action: (request: Request, response: Response) => {
-        const newUsername = request.body.username;
+  path: '/user',
+  method: 'post',
+  action: (request: Request, response: Response) => {
+    const result = createUserSchema.safeParse(request.body);
+    const newUsername = request.body.username;
 
-        if (!newUsername) {
-            return response.status(HttpStatusCode.BadRequest).send({
-                error: `Username is required`,
-            });
-        }
+    if (!isUsernameAvailable(newUsername)) {
+      return response.status(HttpStatusCode.BadRequest).send({
+        error: `Username '${newUsername}' is already taken`,
+      });
+    }
 
-        if (!isValidUsername(newUsername)) {
-            return response.status(HttpStatusCode.BadRequest).send({
-                error: `'${newUsername}' is not a valid username`,
-            });
-        }
+    if (!result.success) {
+      return response.status(HttpStatusCode.BadRequest).json(result.error);
+    }
 
-        if (!isUsernameAvailable(newUsername)) {
-            return response.status(HttpStatusCode.BadRequest).send({
-                error: `Username '${newUsername}' is already taken`,
-            });
-        }
 
-        try {
-            createUser(newUsername);
-            response.status(201).send();
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                response.status(HttpStatusCode.InternalServerError).send({
-                    error: error.message,
-                });
-            } else {
-                response.status(HttpStatusCode.InternalServerError).send({
-                    error: 'Unknown error occurred',
-                });
-            }
-        }
-    },
+    // @ts-ignore
+    createUser(result.data);
+    response.status(HttpStatusCode.Ok).send();
+  },
 };
 
-const getUsersAction: Action = {
-    method: 'get',
-    path: '/user',
-    action: (request: Request, response: Response) => {
-        const users = getUsers();
-        return response.json(users);
-    }
-}
+const listUsersAction: Action = {
+  path: '/user',
+  method: 'get',
+  action: (request: Request, response: Response) => {
+    const users = listUsers();
+
+    return response.json(users)
+  },
+};
+
+const deleteUserAction: Action = {
+  path: '/user/:userId',
+  method: 'delete',
+  action: (request: Request, response: Response) => {
+    const userId = request.params.userId;
+    deleteUser(userId);
+
+    response.status(HttpStatusCode.Ok).send();
+  },
+};
 
 const getUserByIdAction: Action = {
-    method: 'get',
-    path: '/user/:userId',
-    action: (request: Request, response: Response) => {
-        const userId = request.params.userId;
-        return response.json(getUserById(userId));
-    }
-}
+  path: '/user/:userId',
+  method: 'get',
+  action: (request: Request, response: Response) => {
+    const userId = request.params.userId;
+    return response.json(giveUserById(userId));
+  },
+};
 
-const deleteUserByIdAction: Action = {
-    path: '/user/:userId',
-    method: 'delete',
-    action: (request: Request, response: Response) => {
-        const userId = request.params.userId;
-        deleteUserById(userId);
-
-        response.status(HttpStatusCode.Ok).send();
-    },
-}
+export default [createUserAction, listUsersAction, deleteUserAction, getUserByIdAction];
 
 
-export default [createUserAction, getUsersAction, getUserByIdAction, deleteUserByIdAction];

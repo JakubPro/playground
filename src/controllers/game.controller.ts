@@ -1,97 +1,47 @@
-import {HttpStatusCode} from 'axios';
-import {Request, Response} from 'express';
-import {Action} from '../framework/type';
-import {
-    getUserById,
-    updateUser
-} from '../service/users.service';
-import {getTicTacToe, getUserList, makeMoveInGame, startTicTacToeGame} from "../service/game.service";
+import { HttpStatusCode } from 'axios';
+import { Request, Response } from 'express';
+import { Action } from '../framework/type';
+import { createRandomNumber, isGuessedNumberCorrect } from "../service/game.service";
 
+let isUserPlaying = false;
 const startGame: Action = {
-    method: 'post',
     path: '/game',
+    method: 'post',
     action: (request: Request, response: Response) => {
-        let userId = request.header('user_id');
-
-        if (userId && !getUserById(userId.toString())) {
-            return response.status(401).send({
-                error: `User ` + getUserById(userId.toString()).username + ` doesn't exists`,
-            });
+        if (isUserPlaying) {
+            response.json("Gra jest już rozpoczęta!!!");
+        } else {
+            response.json("Gra rozpoczęta");
+            createRandomNumber();
+            //response.json(createRandomNumber());
+            isUserPlaying = true;
         }
-        const oponentId = request.body.oponentId;
-        if (!getUserById(oponentId)) {
+    }
+}
+
+let tries=0;
+const guessNumber: Action = {
+    path: '/game/:number',
+    method: 'post',
+    action: (request: Request, response: Response) => {
+
+        if (!isUserPlaying) {
             return response.status(HttpStatusCode.BadRequest).send({
-                error: `Oponent doesn't exists`,
+                error: `Gra nie jest jeszcze rozpoczęta!`,
             });
+        }else if (tries>=20) {
+            response.json("Przegrałeś!!!");
+        }else {
+
+            const guessedNumber = request.params.number;
+
+            response.json(isGuessedNumberCorrect(guessedNumber));
+            tries++;
+
         }
 
-        if (userId && (getUserById(userId).isPlaying || getUserById(oponentId).isPlaying)) {
-            return response.status(HttpStatusCode.BadRequest).send({
-                error: `One of the players is in game`,
-            });
-        }
-        if (userId) {
-            const user = getUserById(userId);
-            user.isPlaying = true;
-            updateUser(user);
-
-            const oponent = getUserById(oponentId);
-            oponent.isPlaying = true;
-            updateUser(oponent);
-
-            startTicTacToeGame(userId, oponentId)
-            return response.status(HttpStatusCode.Ok).send();
-        }
     }
 
 }
 
-const makeMove: Action = {
-    method: "patch",
-    path: "/game",
-    action: (request: Request, response: Response) => {
-        let userId = request.header('user_id')
-        if (userId && !getUserById(userId.toString())) {
-            return response.status(401).send({
-                error: `User ` + getUserById(userId.toString()).username + ` doesn't exists`,
-            });
-        }
-        const x = request.body.x;
-        const y = request.body.y;
-        if (userId) {
-            const res = makeMoveInGame(userId, x, y);
-            if (res == null) {
-                return response.status(400).send({
-                    error: `You are not in any game or it's not your turn or you are trying to make move in wrong place`,
-                });
-            }
-
-        }
-        return response.status(HttpStatusCode.Ok).send();
-    }
-}
-
-
-const getGame: Action = {
-    method: "get",
-    path: "/game",
-    action: (request: Request, response: Response) => {
-        let userId = request.header('user_id')
-        if (userId && !getUserById(userId.toString())) {
-            return response.status(401).send({
-                error: `User ` + getUserById(userId.toString()).username + ` doesn't exists`,
-            });
-        }
-        response.json(getTicTacToe(userId!));
-    }
-}
-
-const getGameUsers: Action = {
-    method: "get",
-    path: "/users/game/:gameId",
-    action: (request: Request, response: Response) => {
-        const gameId = request.params.gameId;
-        response.json(getUserList(gameId));
-    }
-}
-export default [startGame, makeMove, getGame, getGameUsers];
+export default [startGame, guessNumber];
