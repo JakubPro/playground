@@ -8,6 +8,7 @@ export const createRandomNumber = () => {
 
     }
     return randomNumberArray;
+
 };
 
 const randomNumberArray = createRandomNumber();
@@ -35,13 +36,8 @@ export const isGuessedNumberCorrect = (guessedNumber: string) => {
             triesNumber++;
             return answersArray;
         }
-
     }
-    return "Wygrałeś!!! " + "liczba prób: " + triesNumber;
-
-
-
-
+    return true;
 };
 
 

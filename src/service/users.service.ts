@@ -3,6 +3,7 @@ import {randomUUID} from 'crypto';
 export type User = {
   id: string;
   username: string;
+  isUserPlaying: boolean;
 };
 
 export type CreateUserCommand = {
@@ -25,6 +26,7 @@ export const createUser = (payload: CreateUserCommand, username: string) => {
   userStore[id] = {
     id,
     username: payload.username,
+    isUserPlaying: false,
   };
 };
 
@@ -41,5 +43,9 @@ export const deleteUser = (userId: string) => {
 export const giveUserById = (userId: string) => {
   return userStore[userId];
 }
+export const updateUser = (user: User) => {
+  userStore[user.id] = user;
+}
+
 
 
