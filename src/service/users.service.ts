@@ -1,19 +1,13 @@
-import { randomUUID, createHash } from 'crypto';
+import {randomUUID} from 'crypto';
 
 export type User = {
   id: string;
   username: string;
-  age: number;
-  passwordHash: string;
-  acceptTermOfUse: boolean;
-  createdAt: Date;
+  isUserPlaying: boolean;
 };
 
-export  type CreateUserCommand ={
+export type CreateUserCommand = {
   username: string;
-  age: number;
-  plainPassword: string;
-  acceptTermOfUse: boolean;
 }
 
 const userStore: Record<string, User> = {};
@@ -22,9 +16,8 @@ export const isUsernameAvailable = (username: string) => {
   const users = Object.values(userStore);
   return !users.some((user) => user.username === username);
 }
-export const createUser = (payload: CreateUserCommand,username: string) => {
+export const createUser = (payload: CreateUserCommand, username: string) => {
   const id = randomUUID();
-  const passwordHash: string =  createHash('sha256',{ encoding: 'utf-8' }).update(payload.plainPassword).digest('base64');
 
   if (!isUsernameAvailable(username)) {
     throw new Error(`Username '${username}' is already taken`);
@@ -32,26 +25,27 @@ export const createUser = (payload: CreateUserCommand,username: string) => {
 
   userStore[id] = {
     id,
-    passwordHash,
     username: payload.username,
-    age: payload.age,
-    acceptTermOfUse: payload.acceptTermOfUse,
-    createdAt: new Date(),
+    isUserPlaying: false,
   };
 };
 
-export const listUsers =()=> {
-  const userStoreArray=userStore;
+export const listUsers = () => {
+  const userStoreArray = userStore;
   Object.assign([], userStoreArray);
   return userStoreArray;
 }
 
-export const deleteUser =(userId: string)=> {
+export const deleteUser = (userId: string) => {
   delete userStore[userId];
 }
 
-export const giveUserById =(userId: string)=> {
+export const giveUserById = (userId: string) => {
   return userStore[userId];
 }
+export const updateUser = (user: User) => {
+  userStore[user.id] = user;
+}
+
 
 

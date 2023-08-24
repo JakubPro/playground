@@ -9,17 +9,14 @@ import { z } from "zod";
 
 const createUserSchema = z.object({
   username: z.string().min(3).max(25),
-  plainPassword: z.string().min(5).max(20),
-  age: z.number(),
-  acceptTermOfUse: z.boolean(),
 })
 
 const createUserAction: Action = {
   path: '/user',
   method: 'post',
   action: (request: Request, response: Response) => {
-      const result = createUserSchema.safeParse(request.body);
-      const newUsername = request.body.username;
+    const result = createUserSchema.safeParse(request.body);
+    const newUsername = request.body.username;
 
     if (!isUsernameAvailable(newUsername)) {
       return response.status(HttpStatusCode.BadRequest).send({
@@ -27,9 +24,9 @@ const createUserAction: Action = {
       });
     }
 
-      if(!result.success) {
-        return response.status(HttpStatusCode.BadRequest).json(result.error);
-      }
+    if (!result.success) {
+      return response.status(HttpStatusCode.BadRequest).json(result.error);
+    }
 
 
     // @ts-ignore
@@ -64,10 +61,10 @@ const getUserByIdAction: Action = {
   method: 'get',
   action: (request: Request, response: Response) => {
     const userId = request.params.userId;
-
     return response.json(giveUserById(userId));
   },
 };
-export default [createUserAction,listUsersAction,deleteUserAction,getUserByIdAction];
+
+export default [createUserAction, listUsersAction, deleteUserAction, getUserByIdAction];
 
 
